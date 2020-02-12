@@ -1,1 +1,129 @@
+import math
+class Point(object):
+    def __init__(self,X,Y):
+        self.X = X
+        self.Y = Y
+    def GetX(self):
+        return int(self.X)
+    def GetY(self):
+        return int(self.Y)
+    def __add__(self,other):
+        return Point(self.GetX()+other.GetX(),self.GetY()+other.GetY())
+    def __str__(self):
+        return str(self.GetX())+","+str(self.GetY())
+    def toTuple(self):
+        return (self.GetX(),self.GetY())
+class Move(Point):
+    def __init__(self,direction,startPoint):
+        self.X = startPoint.GetX()
+        self.Y = startPoint.GetY()
+        self.direction = direction
+    def GetDir(self):
+        return self.direction
+    def GetVector(self):
+        if(self.GetDir()==1):
+            return Point(0,1)
+        elif(self.GetDir()==2):
+            return Point(1,1)
+        elif(self.GetDir()==3):
+            return Point(1,0)
+        elif(self.GetDir()==4):
+            return Point(1,-1)
+        elif(self.GetDir()==5):
+            return Point(0,-1)
+        elif(self.GetDir()==6):
+            return Point(-1,-1)
+        elif(self.GetDir()==7):
+            return Point(-1,0)
+        elif(self.GetDir()==8):
+            return Point(-1,1)
+        else:
+            print("Invalid direction")
+            return Point(0,0)
+class Table(object):
+    def __init__(self,width,height,gateWidth):
+        #arguments tell number of "dots" in the game
+        self.width = width
+        self.height = height
+        self.gateWidth = gateWidth
+        self.Setup()
+    def __init__(self):
+        self.width = 7
+        self.height = 9
+        self.gateWidth = 3
+        self.Setup()
+    def GetCenter(self):
+        return Point(math.ceil(self.width/2),math.ceil(self.height/2))
+    def Setup(self):
+        self.state = {}
+        for i in range(1,self.width+1,1):
+            for j in range(1,self.height+1,1):
+                self.state[(i,j)]=[]
+    def GetSymbol(self,num):
+        if(num==1 or num==5):
+            return "|"
+        elif(num==2 or num==6):
+            return "/"
+        elif(num==3 or num==7):
+            return "-"
+        elif(num==4 or num==8):
+            return "\\"
+        else:
+            return "Wrong symbol"
+    def Draw(self):
+        drawDict = {}
+        for i in range(1,self.width+1,1):
+            for j in range(1,self.height+1,1):
+                drawDict[(i*2,j*2)]="*"
+                for val in self.state[(i,j)]:
+                    if((Point(i*2,j*2)+Move(val,Point(0,0)).GetDir()).toTuple() not in drawDict.keys()):
+                        drawDict[(Point(i*2,j*2)+Move(val,Point(0,0)).GetDir()).toTuple()]=self.GetSymbol(val)
+                    else:
+                        print("x should go here")
+        drawString = ""
+        for i in range(0,self.width*2+2,1):
+            drawLine = ""
+            for j in range(0,self.height*2+2,1):
+                drawLine+=str(drawDict[(i,j)])
+            drawString+=drawLine+"\n"
+        print(drawString)
+class Game(object):
+    def __init__(self,table):
+        self.table = table
+        self.current_player = 1
+        self.current_moveset = []
+        self.current_position = self.table.GetCenter()
+        self.history = []
+    def AddMove(self,move_dir):
+        newMove = Move(move_dir,self.current_position)
+        if(self.CheckMoveValidity(newMove)):
+            self.current_moveset.append(newMove)
+            self.table.state[self.current_position].append(newMove.GetDir())
+            self.current_position+=newMove.GetVector()
+        if(True):
+            #check if move is final
+            self.history.append((self.current_player,self.current_moveset))
+            self.current_moveset = []
+            self.SwitchPlayers()
+    def CheckMoveValidity(self,move_obj):
+        moveValidFlag = True
+        if(move_obj.GetDir() in self.table.state[(move_obj.GetX(),move_obj.GetY())]):
+            #move already taken
+            moveValidFlag = False
+        if(int((self.current_position+move_obj.GetVector()).GetX()) not in range(0,self.table.width+1,1) or
+        (int((self.current_position+move_obj.GetVector()).GetY()) not in range(0,self.table.height+1,1))):
+            #move out of the table
+            moveValidFlag = False
+        return moveValidFlag
+    def SwitchPlayers(self):
+        if(self.current_player==1):
+            self.current_player = 2
+        else:
+            self.current_player = 1
+    def Update(self):
+        self.table.Draw()
 
+newTable = Table()
+newGame = Game(newTable)
+newGame.AddMove(1)
+newGame.Update()
