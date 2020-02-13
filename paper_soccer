@@ -11,6 +11,8 @@ class Point(object):
         return Point(self.GetX()+other.GetX(),self.GetY()+other.GetY())
     def __str__(self):
         return str(self.GetX())+","+str(self.GetY())
+    def Mult(self,mul_int):
+        return Point(self.GetX()*mul_int,self.GetY()*mul_int)
     def toTuple(self):
         return (self.GetX(),self.GetY())
 class Move(Point):
@@ -40,6 +42,14 @@ class Move(Point):
         else:
             print("Invalid direction")
             return Point(0,0)
+    def GetLeftVecs(self):
+        return [1,5,6,7,8]
+    def GetUpVecs(self):
+        return [1,2,3,7,8]
+    def GetRightVecs(self):
+        return [1,2,3,4,5]
+    def GetDownVecs(self):
+        return [3,4,5,6,7]
 class Table(object):
     def __init__(self,width,height,gateWidth):
         #arguments tell number of "dots" in the game
@@ -56,9 +66,18 @@ class Table(object):
         return Point(math.ceil(self.width/2),math.ceil(self.height/2))
     def Setup(self):
         self.state = {}
+        tempMove = Move(0,Point(0,0))
         for i in range(1,self.width+1,1):
             for j in range(1,self.height+1,1):
                 self.state[(i,j)]=[]
+                if(i==1):
+                    self.state[(i,j)]+=tempMove.GetLeftVecs()
+                if(i==self.width):
+                    self.state[(i,j)]+=tempMove.GetRightVecs()
+                if(j==1):
+                    self.state[(i,j)]+=tempMove.GetDownVecs()
+                if(j==self.height):
+                    self.state[(i,j)]+=tempMove.GetUpVecs()
     def GetSymbol(self,num):
         if(num==1 or num==5):
             return "|"
@@ -68,23 +87,57 @@ class Table(object):
             return "-"
         elif(num==4 or num==8):
             return "\\"
+        elif(num==0):
+            return "*"
+        elif(num==9):
+            return "+"
         else:
             return "Wrong symbol"
     def Draw(self):
         drawDict = {}
+        tempMove = Move(0,Point(0,0))
         for i in range(1,self.width+1,1):
             for j in range(1,self.height+1,1):
-                drawDict[(i*2,j*2)]="*"
+                dotFlag = True
+                #drawing borders
+                if(i==1 or i==self.width):
+                    drawDict[(i*2,j*2)]=self.GetSymbol(1)
+                    drawDict[(i*2,j*2+1)]=self.GetSymbol(1)
+                    drawDict[(i*2,j*2-1)]=self.GetSymbol(1)
+                    dotFlag = False
+                if(j==1 or j==self.height):
+                    drawDict[(i*2,j*2)]=self.GetSymbol(3)
+                    drawDict[(i*2+1,j*2)]=self.GetSymbol(3)
+                    drawDict[(i*2-1,j*2)]=self.GetSymbol(3)
+                    dotFlag = False
+                #not border
+                if(dotFlag):
+                    drawDict[(i*2,j*2)]=self.GetSymbol(0)
+                #iterate through points on the table
                 for val in self.state[(i,j)]:
-                    if((Point(i*2,j*2)+Move(val,Point(0,0)).GetDir()).toTuple() not in drawDict.keys()):
-                        drawDict[(Point(i*2,j*2)+Move(val,Point(0,0)).GetDir()).toTuple()]=self.GetSymbol(val)
+                    #dont draw border taken moves
+                    if((i==1 and (val in tempMove.GetLeftVecs())) or
+                        (i==self.width and (val in tempMove.GetRightVecs())) or
+                        (j==1 and (val in tempMove.GetDownVecs())) or
+                        (j==self.height and (val in tempMove.GetUpVecs()))):
+                        pass
                     else:
-                        print("x should go here")
-        drawString = ""
+                        #check for repeating moves
+                        if((Point(i*2,j*2)+Move(val,Point(0,0)).GetVector()).toTuple() not in drawDict.keys()):
+                            drawDict[(Point(i*2,j*2)+Move(val,Point(0,0)).GetVector()).toTuple()]=self.GetSymbol(val)
+                        else:
+                            print("check if x should go here. take care for the border")
         for i in range(0,self.width*2+2,1):
-            drawLine = ""
             for j in range(0,self.height*2+2,1):
-                drawLine+=str(drawDict[(i,j)])
+                if((i,j) not in drawDict.keys()):
+                    drawDict[(i,j)]=" "
+        drawString = ""
+        #mind the swapped order here!! height first and also bottom-up!
+        for i in range(self.height*2+1,-1,-1):
+            drawLine = ""
+            for j in range(0,self.width*2+2,1):
+                #draw corners TODO
+                drawLine+=str(drawDict[(j,i)])
             drawString+=drawLine+"\n"
         print(drawString)
 class Game(object):
@@ -98,13 +151,15 @@ class Game(object):
         newMove = Move(move_dir,self.current_position)
         if(self.CheckMoveValidity(newMove)):
             self.current_moveset.append(newMove)
-            self.table.state[self.current_position].append(newMove.GetDir())
+            self.table.state[(self.current_position.GetX(),self.current_position.GetY())].append(newMove.GetDir())
             self.current_position+=newMove.GetVector()
-        if(True):
-            #check if move is final
-            self.history.append((self.current_player,self.current_moveset))
-            self.current_moveset = []
-            self.SwitchPlayers()
+            if(True):
+                #check if move is final
+                self.history.append((self.current_player,self.current_moveset))
+                self.current_moveset = []
+                self.SwitchPlayers()
+        else:
+            print("move invalid!")
     def CheckMoveValidity(self,move_obj):
         moveValidFlag = True
         if(move_obj.GetDir() in self.table.state[(move_obj.GetX(),move_obj.GetY())]):
@@ -126,4 +181,9 @@ class Game(object):
 newTable = Table()
 newGame = Game(newTable)
 newGame.AddMove(1)
+newGame.AddMove(2)
+newGame.AddMove(3)
+newGame.AddMove(4)
+newGame.AddMove(5)
+newGame.AddMove(6)
 newGame.Update()
