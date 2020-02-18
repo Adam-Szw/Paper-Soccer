@@ -1,189 +1,234 @@
 import math
-class Point(object):
-    def __init__(self,X,Y):
-        self.X = X
-        self.Y = Y
-    def GetX(self):
-        return int(self.X)
-    def GetY(self):
-        return int(self.Y)
-    def __add__(self,other):
-        return Point(self.GetX()+other.GetX(),self.GetY()+other.GetY())
-    def __str__(self):
-        return str(self.GetX())+","+str(self.GetY())
-    def Mult(self,mul_int):
-        return Point(self.GetX()*mul_int,self.GetY()*mul_int)
-    def toTuple(self):
-        return (self.GetX(),self.GetY())
-class Move(Point):
-    def __init__(self,direction,startPoint):
-        self.X = startPoint.GetX()
-        self.Y = startPoint.GetY()
-        self.direction = direction
-    def GetDir(self):
-        return self.direction
-    def GetVector(self):
-        if(self.GetDir()==1):
-            return Point(0,1)
-        elif(self.GetDir()==2):
-            return Point(1,1)
-        elif(self.GetDir()==3):
-            return Point(1,0)
-        elif(self.GetDir()==4):
-            return Point(1,-1)
-        elif(self.GetDir()==5):
-            return Point(0,-1)
-        elif(self.GetDir()==6):
-            return Point(-1,-1)
-        elif(self.GetDir()==7):
-            return Point(-1,0)
-        elif(self.GetDir()==8):
-            return Point(-1,1)
-        else:
-            print("Invalid direction")
-            return Point(0,0)
-    def GetLeftVecs(self):
-        return [1,5,6,7,8]
-    def GetUpVecs(self):
-        return [1,2,3,7,8]
-    def GetRightVecs(self):
-        return [1,2,3,4,5]
-    def GetDownVecs(self):
-        return [3,4,5,6,7]
-class Table(object):
-    def __init__(self,width,height,gateWidth):
-        #arguments tell number of "dots" in the game
-        self.width = width
-        self.height = height
-        self.gateWidth = gateWidth
-        self.Setup()
+class PaperSoccer():
     def __init__(self):
-        self.width = 7
-        self.height = 9
-        self.gateWidth = 3
-        self.Setup()
-    def GetCenter(self):
-        return Point(math.ceil(self.width/2),math.ceil(self.height/2))
-    def Setup(self):
-        self.state = {}
-        tempMove = Move(0,Point(0,0))
-        for i in range(1,self.width+1,1):
-            for j in range(1,self.height+1,1):
-                self.state[(i,j)]=[]
-                if(i==1):
-                    self.state[(i,j)]+=tempMove.GetLeftVecs()
-                if(i==self.width):
-                    self.state[(i,j)]+=tempMove.GetRightVecs()
-                if(j==1):
-                    self.state[(i,j)]+=tempMove.GetDownVecs()
-                if(j==self.height):
-                    self.state[(i,j)]+=tempMove.GetUpVecs()
-    def GetSymbol(self,num):
-        if(num==1 or num==5):
-            return "|"
-        elif(num==2 or num==6):
-            return "/"
-        elif(num==3 or num==7):
-            return "-"
-        elif(num==4 or num==8):
-            return "\\"
-        elif(num==0):
+        newTable = self.Table()
+        newGame = self.Game(newTable)
+        newGame.Update()
+    def GetAssociation(token):
+        #vector,opposite token,symbol,description, opposite symbol
+        if(token==0):
+            return (PaperSoccer.Point(0,1),4,"|","up")
+        elif(token==1):
+            return (PaperSoccer.Point(1,1),5,"/","up-right","\\")
+        elif(token==2):
+            return (PaperSoccer.Point(1,0),6,"-","right")
+        elif(token==3):
+            return (PaperSoccer.Point(1,-1),7,"\\","down-right","/")
+        elif(token==4):
+            return (PaperSoccer.Point(0,-1),0,"|","down")
+        elif(token==5):
+            return (PaperSoccer.Point(-1,-1),1,"/","down-left","\\")
+        elif(token==6):
+            return (PaperSoccer.Point(-1,0),2,"-","left")
+        elif(token==7):
+            return (PaperSoccer.Point(-1,1),3,"\\","up-left","/")
+        elif(token==8):
+            return "X"
+        elif(token==9):
             return "*"
-        elif(num==9):
+        elif(token==10):
             return "+"
+        elif(token=="up"):
+            return [0,1,2,6,7]
+        elif(token=="right"):
+            return [0,1,2,3,4]
+        elif(token=="down"):
+            return [2,3,4,5,6]
+        elif(token=="left"):
+            return [0,4,5,6,7]
+        elif(token=="diagonal"):
+            return [1,3,5,7]
+        elif(token=="possible"):
+            return [0,1,2,3,4,5,6,7]
         else:
-            return "Wrong symbol"
-    def Draw(self):
-        drawDict = {}
-        tempMove = Move(0,Point(0,0))
-        for i in range(1,self.width+1,1):
-            for j in range(1,self.height+1,1):
-                dotFlag = True
-                #drawing borders
-                if(i==1 or i==self.width):
-                    drawDict[(i*2,j*2)]=self.GetSymbol(1)
-                    drawDict[(i*2,j*2+1)]=self.GetSymbol(1)
-                    drawDict[(i*2,j*2-1)]=self.GetSymbol(1)
-                    dotFlag = False
-                if(j==1 or j==self.height):
-                    drawDict[(i*2,j*2)]=self.GetSymbol(3)
-                    drawDict[(i*2+1,j*2)]=self.GetSymbol(3)
-                    drawDict[(i*2-1,j*2)]=self.GetSymbol(3)
-                    dotFlag = False
-                #not border
-                if(dotFlag):
-                    drawDict[(i*2,j*2)]=self.GetSymbol(0)
-                #iterate through points on the table
-                for val in self.state[(i,j)]:
-                    #dont draw border taken moves
-                    if((i==1 and (val in tempMove.GetLeftVecs())) or
-                        (i==self.width and (val in tempMove.GetRightVecs())) or
-                        (j==1 and (val in tempMove.GetDownVecs())) or
-                        (j==self.height and (val in tempMove.GetUpVecs()))):
-                        pass
+            print("wrong token!")
+    class Point(object):
+        def __init__(self,X,Y):
+            self.X = X
+            self.Y = Y
+        def GetX(self):
+            return int(self.X)
+        def GetY(self):
+            return int(self.Y)
+        def __add__(self,other):
+            return PaperSoccer.Point(self.GetX()+other.GetX(),self.GetY()+other.GetY())
+        def __str__(self):
+            return str(self.GetX())+","+str(self.GetY())
+        def __mul__(self,number):
+            return PaperSoccer.Point(self.GetX()*number,self.GetY()*number)
+        def Mult(self,mul_int):
+            return PaperSoccer.Point(self.GetX()*mul_int,self.GetY()*mul_int)
+        def ToTuple(self):
+            return (self.GetX(),self.GetY())
+    class Move(Point):
+        def __init__(self,direction,start):
+            self.X = start.GetX()
+            self.Y = start.GetY()
+            self.direction = direction
+        def GetDir(self):
+            return self.direction
+    class Table(object):
+        def __init__(self,width,height,gateWidth):
+            #arguments tell number of "dots" in the game
+            self.width = width
+            self.height = height
+            self.gateWidth = gateWidth
+            self.Setup()
+        def __init__(self):
+            self.width = 9
+            self.height = 11
+            self.gateWidth = 1
+            self.Setup()
+        def GetCenter(self):
+            return PaperSoccer.Point(math.ceil(self.width/2),math.ceil(self.height/2))
+        def Setup(self):
+            self.state = {}
+            #setting up gates
+            k = (self.width-self.gateWidth)//2
+            for i in range(1,self.width+1,1):
+                for j in range(0,self.height+2,1):
+                    self.state[(i,j)]=[]
+                    if(i==1):
+                        self.state[(i,j)]+=PaperSoccer.GetAssociation("left")
+                    if(i==self.width):
+                        self.state[(i,j)]+=PaperSoccer.GetAssociation("right")
+                    if(j==1 and i not in range(k+1,k+self.gateWidth+1,1)):
+                        self.state[(i,j)]+=PaperSoccer.GetAssociation("down")
+                    if(j==self.height and i not in range(k+1,k+self.gateWidth+1,1)):
+                        self.state[(i,j)]+=PaperSoccer.GetAssociation("up")
+            self.state[k,1].remove(3)
+            self.state[k+self.gateWidth+1,1].remove(5)
+            self.state[k,self.height].remove(1)
+            self.state[k+self.gateWidth+1,self.height].remove(7)
+        def Draw(self,current_position):
+            drawDict = {}
+            for i in range(1,self.width+1,1):
+                for j in range(1,self.height+1,1):
+                    if(current_position==(i,j)):
+                        drawDict[(i*2,j*2)]=PaperSoccer.GetAssociation(10)
                     else:
+                        drawDict[(i*2,j*2)]=PaperSoccer.GetAssociation(9)
+                    #iterate through PaperSoccer.Points on the table
+                    for val in self.state[(i,j)]:
                         #check for repeating moves
-                        if((Point(i*2,j*2)+Move(val,Point(0,0)).GetVector()).toTuple() not in drawDict.keys()):
-                            drawDict[(Point(i*2,j*2)+Move(val,Point(0,0)).GetVector()).toTuple()]=self.GetSymbol(val)
+                        loc = PaperSoccer.Point(i*2,j*2)
+                        locTuple = (loc+PaperSoccer.GetAssociation(val)[0]).ToTuple()
+                        if(locTuple not in drawDict.keys()):
+                            drawDict[locTuple]=PaperSoccer.GetAssociation(val)[2]
+                        elif(val in PaperSoccer.GetAssociation("diagonal") and locTuple in drawDict.keys()):
+                            #check if x should go here
+                            if(drawDict[locTuple]==PaperSoccer.GetAssociation(val)[4]):
+                                drawDict[locTuple]=PaperSoccer.GetAssociation(8)
                         else:
-                            print("check if x should go here. take care for the border")
-        for i in range(0,self.width*2+2,1):
-            for j in range(0,self.height*2+2,1):
-                if((i,j) not in drawDict.keys()):
-                    drawDict[(i,j)]=" "
-        drawString = ""
-        #mind the swapped order here!! height first and also bottom-up!
-        for i in range(self.height*2+1,-1,-1):
-            drawLine = ""
-            for j in range(0,self.width*2+2,1):
-                #draw corners TODO
-                drawLine+=str(drawDict[(j,i)])
-            drawString+=drawLine+"\n"
-        print(drawString)
-class Game(object):
-    def __init__(self,table):
-        self.table = table
-        self.current_player = 1
-        self.current_moveset = []
-        self.current_position = self.table.GetCenter()
-        self.history = []
-    def AddMove(self,move_dir):
-        newMove = Move(move_dir,self.current_position)
-        if(self.CheckMoveValidity(newMove)):
-            self.current_moveset.append(newMove)
-            self.table.state[(self.current_position.GetX(),self.current_position.GetY())].append(newMove.GetDir())
-            self.current_position+=newMove.GetVector()
-            if(True):
-                #check if move is final
-                self.history.append((self.current_player,self.current_moveset))
-                self.current_moveset = []
-                self.SwitchPlayers()
-        else:
-            print("move invalid!")
-    def CheckMoveValidity(self,move_obj):
-        moveValidFlag = True
-        if(move_obj.GetDir() in self.table.state[(move_obj.GetX(),move_obj.GetY())]):
-            #move already taken
-            moveValidFlag = False
-        if(int((self.current_position+move_obj.GetVector()).GetX()) not in range(0,self.table.width+1,1) or
-        (int((self.current_position+move_obj.GetVector()).GetY()) not in range(0,self.table.height+1,1))):
-            #move out of the table
-            moveValidFlag = False
-        return moveValidFlag
-    def SwitchPlayers(self):
-        if(self.current_player==1):
-            self.current_player = 2
-        else:
+                            #taken vertical or horizontal
+                            pass
+            for i in range(0,self.width*2+2,1):
+                for j in range(0,self.height*2+2,1):
+                    if((i,j) not in drawDict.keys()):
+                        drawDict[(i,j)]=" "
+            drawString = ""
+            drawString+="Player 2"+"\n"
+            #mind the swapped order here!! height first and also bottom-up!
+            for i in range(self.height*2+1,0,-1):
+                drawLine = ""
+                for j in range(0,self.width*2+2,1):
+                    #draw corners TODO
+                    drawLine+=str(drawDict[(j,i)])
+                drawString+=drawLine
+                if(i!=0):
+                    drawString+="\n"
+            drawString+="Player 1"+"\n"
+            print(drawString)
+    class Game(object):
+        def __init__(self,table):
+            self.table = table
             self.current_player = 1
-    def Update(self):
-        self.table.Draw()
-
-newTable = Table()
-newGame = Game(newTable)
-newGame.AddMove(1)
-newGame.AddMove(2)
-newGame.AddMove(3)
-newGame.AddMove(4)
-newGame.AddMove(5)
-newGame.AddMove(6)
-newGame.Update()
+            self.current_moveset = []
+            self.current_position = self.table.GetCenter()
+            self.history = []
+            self.finishFlag = False
+        def AddMove(self,move_dir):
+            newMove = PaperSoccer.Move(move_dir,self.current_position)
+            if(self.CheckMoveValidity(newMove)):
+                self.current_moveset.append(newMove)
+                newPosition = self.current_position+PaperSoccer.GetAssociation(newMove.GetDir())[0]
+                self.table.state[(self.current_position.GetX(),self.current_position.GetY())].append(newMove.GetDir())
+                self.table.state[(newPosition.GetX(),newPosition.GetY())].append(PaperSoccer.GetAssociation(newMove.GetDir())[1])
+                self.current_position+=PaperSoccer.GetAssociation(newMove.GetDir())[0]
+                if(self.CheckVictoryConditions()=="Moveout"):
+                    self.SwitchPlayers()
+                    self.EndGame(self.current_player)
+                elif(self.CheckVictoryConditions()=="Goal1"):
+                    self.EndGame(1)
+                elif(self.CheckVictoryConditions()=="Goal2"):
+                    self.EndGame(2)
+                if(len(self.table.state[(self.current_position.GetX(),self.current_position.GetY())])<=1):
+                    #check if move is final
+                    self.history.append((self.current_player,self.current_moveset))
+                    self.current_moveset = []
+                    self.SwitchPlayers()
+            else:
+                print("move invalid!")
+        def CheckMoveValidity(self,move_obj):
+            moveValidFlag = True
+            if(move_obj.GetDir() in self.table.state[(move_obj.GetX(),move_obj.GetY())]):
+                #move already taken
+                moveValidFlag = False
+            if(int((self.current_position+PaperSoccer.GetAssociation(move_obj.GetDir())[0]).GetX()) not in range(1,self.table.width+1,1) or
+            (int((self.current_position+PaperSoccer.GetAssociation(move_obj.GetDir())[0]).GetY()) not in range(0,self.table.height+2,1))):
+                #move out of the table
+                moveValidFlag = False
+            return moveValidFlag
+        def GetPossibleMoves(self):
+            returnList = PaperSoccer.GetAssociation("possible")
+            for item in self.table.state[self.current_position.ToTuple()]:
+                if(item in returnList):
+                    returnList.remove(item)
+            return returnList
+        def CheckVictoryConditions(self):
+            if(len(self.GetPossibleMoves())<=0):
+                #todo
+                return "Moveout"
+            elif(self.current_position.GetY()==0):
+                return "Goal2"
+            elif(self.current_position.GetY()==self.table.height+1):
+                return "Goal1"
+            else:
+                return False
+        def EndGame(self,winner):
+            self.finishFlag = True
+            if(winner==1 or winner==2):
+                #normal finish
+                print(f"Game finished! the winner is {winner}")
+            elif(winner==3):
+                #time-out TODO
+                pass
+            elif(winner==4):
+                #draw TODO
+                pass
+            else:
+                #unknown TODO
+                pass
+        def SwitchPlayers(self):
+            if(self.current_player==1):
+                self.current_player = 2
+            else:
+                self.current_player = 1
+        def Update(self):
+            self.table.Draw(self.current_position.ToTuple())
+            newMove = None
+            while True:
+                print(f"Player {self.current_player} move now:")
+                try:
+                    newMove = int(input())
+                except:
+                    pass
+                if(newMove in PaperSoccer.GetAssociation("possible")):
+                    break
+                else:
+                    print(f"Incorrect move! Only accepting values in {self.GetPossibleMoves()}")
+            if(newMove!=None):
+                self.AddMove(newMove)
+            if(not self.finishFlag):
+                self.Update()
+PaperSoccer()
